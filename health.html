@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1220">
+    <title>MedGuard AI — Medication Safety Guardian</title>
+    <meta name="description" content="A local-only medication tracking prototype.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #0b1220;
+            --panel: #111c2d;
+            --panel2: #162438;
+            --line: #26374b;
+            --muted: #92a4ba;
+            --teal: #2dd4bf;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: #edf5ff;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible,
+        a:focus-visible {
+            outline: 2px solid var(--teal);
+            outline-offset: 3px;
+        }
+
+        [x-cloak] {
+            display: none !important;
+        }
+
+        .panel {
+            background: linear-gradient(145deg, rgba(22, 36, 56, .96), rgba(17, 28, 45, .98));
+            border: 1px solid var(--line);
+            border-radius: 18px;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .field {
+            width: 100%;
+            background: #0c1727;
+            color: #edf5ff;
+            border: 1px solid #30445c;
+            border-radius: 10px;
+            padding: 11px 12px;
+        }
+
+        .field::placeholder {
+            color: #71849b;
+        }
+
+        .field:focus {
+            border-color: var(--teal);
+            outline: none;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #30445c;
+            background: #17263b;
+            color: #eaf3ff;
+            transition: .18s ease;
+        }
+
+        .btn:hover {
+            background: #223650;
+        }
+
+        .btn-primary {
+            color: #06251f;
+            background: var(--teal);
+            border-color: var(--teal);
+            font-weight: 750;
+        }
+
+        .btn-primary:hover {
+            background: #5eead4;
+        }
+
+        .btn-danger {
+            color: #fda4af;
+            border-color: #713544;
+        }
+
+        .btn-danger:hover {
+            background: #3b202d;
+        }
+
+        .nav-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-align: left;
+            border-radius: 11px;
+            padding: 12px;
+            color: #a9b8ca;
+            transition: .18s ease;
+        }
+
+        .nav-btn:hover,
+        .nav-btn.active {
+            color: #f3fffd;
+            background: #173b43;
+        }
+
+        .nav-btn.active {
+            box-shadow: inset 3px 0 var(--teal);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 4px 9px;
+            font-size: 12px;
+            font-weight: 700;
+            background: #25364a;
+            color: #cbd9e9;
+        }
+
+        .badge-teal {
+            background: #123c3c;
+            color: #7ce8d7;
+        }
+
+        .badge-yellow {
+            background: #45371a;
+            color: #f7d67d;
+        }
+
+        .badge-red {
+            background: #45242d;
+            color: #ffb0bc;
+        }
+
+        .modal-backdrop {
+            background: rgba(3, 8, 17, .78);
+            backdrop-filter: blur(7px);
+        }
+
+        .metric-number {
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            font-weight: 800;
+            letter-spacing: -.04em;
+        }
+
+        .section-title {
+            font-size: 1.12rem;
+            font-weight: 750;
+            letter-spacing: -.02em;
+        }
+
+        .small-label {
+            display: block;
+            margin-bottom: 6px;
+            color: #b5c5d7;
+            font-size: .83rem;
+            font-weight: 650;
+        }
+
+        .divider {
+            border-color: var(--line);
+        }
+
+        .toast {
+            box-shadow: 0 12px 45px #0007;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 13px 14px;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--muted);
+        }
+
+        tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .drop-zone {
+            border: 1px dashed #45617a;
+            border-radius: 14px;
+        }
+
+        @media (max-width: 767px) {
+            .metric-number {
+                font-size: 1.6rem;
+            }
+
+            .main-content {
+                padding: 16px !important;
+            }
+
+            .mobile-scroll {
+                overflow-x: auto;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body x-data="medGuardMasterApp()" x-init="init()" @keydown.escape.window="closeModals()">
+    <div class="min-h-screen">
+        <!-- Mobile header -->
+        <header class="md:hidden flex items-center justify-between p-4 border-b divider">
+            <a href="#" @click.prevent="navigate('overview')" class="flex items-center gap-3">
+                <span
+                    class="w-10 h-10 rounded-xl bg-teal-300 text-slate-950 grid place-items-center font-black">M+</span>
+                <span>
+                    <span class="block font-extrabold tracking-tight">MedGuard <span
+                            class="text-teal-300">AI</span></span>
+                    <span class="block text-xs muted">Medication guardian</span>
+                </span>
+            </a>
+            <button class="btn" @click="mobileMenuOpen = !mobileMenuOpen" :aria-expanded="mobileMenuOpen"
+                aria-label="Toggle navigation">
+                <span x-text="mobileMenuOpen ? 'Close ✕' : 'Menu ☰'"></span>
+            </button>
+        </header>
+
+        <div class="flex min-h-screen">
+            <!-- Sidebar -->
+            <aside class="w-64 shrink-0 border-r divider p-5 hidden md:flex md:flex-col">
+                <a href="#" @click.prevent="navigate('overview')" class="flex items-center gap-3 mb-9">
+                    <span
+                        class="w-11 h-11 rounded-xl bg-teal-300 text-slate-950 grid place-items-center text-xl font-black">M+</span>
+                    <span>
+                        <span class="block text-lg font-extrabold tracking-tight">MedGuard <span
+                                class="text-teal-300">AI</span></span>
+                        <span class="block text-xs muted">Medication guardian</span>
+                    </span>
+                </a>
+                <p class="text-xs uppercase tracking-widest muted mb-3 px-3">Workspace</p>
+                <nav class="space-y-1" aria-label="Main navigation">
+                    <template x-for="item in navItems" :key="item.id">
+                        <button type="button" class="nav-btn" :class="{active: activeTab === item.id}"
+                            @click="navigate(item.id)">
+                            <span class="text-lg w-6 text-center" x-text="item.icon"></span>
+                            <span x-text="item.label"></span>
+                            <span class="ml-auto text-xs muted" x-show="item.id === 'medications'"
+                                x-text="medications.length"></span>
+                        </button>
+                    </template>
+                </nav>
+                <div class="mt-auto panel p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="w-2 h-2 rounded-full bg-teal-300"></span>
+                        <span class="text-sm font-semibold">Local demo mode</span>
+                    </div>
+                    <p class="text-xs muted leading-relaxed">Records are stored in this browser only. No clinical
+                        interaction checker is connected.</p>
+                </div>
+            </aside>
+
+            <!-- Mobile nav -->
+            <div x-cloak x-show="mobileMenuOpen" x-transition class="md:hidden fixed inset-0 z-30 bg-black/70"
+                @click.self="mobileMenuOpen = false">
+                <nav class="w-72 max-w-[85vw] h-full p-5 bg-slate-950 border-r divider" aria-label="Mobile navigation">
+                    <div class="flex justify-between items-center mb-6">
+                        <span class="font-bold">Navigation</span>
+                        <button class="btn" @click="mobileMenuOpen = false" aria-label="Close menu">✕</button>
+                    </div>
+                    <template x-for="item in navItems" :key="item.id">
+                        <button type="button" class="nav-btn mb-1" :class="{active: activeTab === item.id}"
+                            @click="navigate(item.id)">
+                            <span class="text-lg w-6 text-center" x-text="item.icon"></span>
+                            <span x-text="item.label"></span>
+                        </button>
+                    </template>
+                    <p class="text-xs muted mt-6 leading-relaxed">Local prototype. Do not enter real patient
+                        information.</p>
+                </nav>
+            </div>
+
+            <!-- Main content -->
+            <main class="flex-1 min-w-0 main-content p-7 lg:p-10">
+                <div class="max-w-7xl mx-auto">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-7">
+                        <div>
+                            <p class="text-sm text-teal-300 mb-1">Medication care workspace</p>
+                            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight" x-text="currentTitle()"></h1>
+                            <p class="muted mt-2" x-text="currentSubtitle()"></p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="btn" @click="navigate('scanner')">＋ Paste description</button>
+                            <button class="btn btn-primary" @click="openAddModal()">＋ Add medicine</button>
+                        </div>
+                    </div>
+
+                    <!-- Persistent safety notice -->
+                    <div class="rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 mb-7 flex gap-3 items-start">
+                        <span class="text-xl" aria-hidden="true">ⓘ</span>
+                        <div class="text-sm">
+                            <p class="font-bold text-amber-200">Local prototype — demo data only</p>
+                            <p class="text-amber-100/75 mt-1">This app does not verify prescriptions, detect drug
+                                interactions, or provide medical advice. Do not enter real patient information. Confirm
+                                medication questions with a qualified healthcare professional.</p>
+                        </div>
+                    </div>
+
+                    <!-- OVERVIEW -->
+                    <section x-show="activeTab === 'overview'" x-cloak>
+                        <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-7">
+                            <div class="panel p-5">
+                                <p class="text-sm muted">Total medicines</p>
+                                <p class="metric-number mt-3" x-text="medications.length"></p>
+                                <p class="text-xs muted mt-2">Saved in this browser</p>
+                            </div>
+                            <div class="panel p-5">
+                                <p class="text-sm muted">Dose records</p>
+                                <p class="metric-number mt-3" x-text="history.length"></p>
+                                <p class="text-xs muted mt-2">All recorded statuses</p>
+                            </div>
+                            <div class="panel p-5">
+                                <p class="text-sm muted">Marked taken</p>
+                                <p class="metric-number mt-3 text-teal-300"
+                                    x-text="history.filter(h => h.status === 'Taken').length"></p>
+                                <p class="text-xs muted mt-2">Recorded as taken</p>
+                            </div>
+                            <div class="panel p-5">
+                                <p class="text-sm muted">Caregiver contacts</p>
+                                <p class="metric-number mt-3" x-text="caregivers.length"></p>
+                                <p class="text-xs muted mt-2">Local entries only</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+                            <div class="panel p-5 xl:col-span-2">
+                                <div class="flex items-center justify-between gap-3 mb-5">
+                                    <div>
+                                        <h2 class="section-title">Your medications</h2>
+                                        <p class="text-sm muted mt-1">Your locally saved records</p>
+                                    </div>
+                                    <button class="btn" @click="navigate('medications')">View all →</button>
+                                </div>
+                                <template x-if="medications.length === 0">
+                                    <div class="text-center py-12">
+                                        <div class="text-4xl mb-3">＋</div>
+                                        <p class="font-semibold">No medications added yet</p>
+                                        <p class="text-sm muted mt-2 mb-5">Add a demo record to get started.</p>
+                                        <button class="btn btn-primary" @click="openAddModal()">Add medicine</button>
+                                    </div>
+                                </template>
+                                <div class="space-y-3">
+                                    <template x-for="med in medications.slice(0, 5)" :key="med.id">
+                                        <div
+                                            class="rounded-xl bg-slate-950/40 border divider p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                                            <div
+                                                class="w-11 h-11 rounded-xl bg-teal-950 text-teal-300 grid place-items-center text-xl">
+                                                ✚</div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="font-bold break-words" x-text="med.name"></p>
+                                                <p class="text-sm muted mt-1"
+                                                    x-text="[med.strength, med.frequency].filter(Boolean).join(' · ') || 'Details not specified'">
+                                                </p>
+                                            </div>
+                                            <span class="badge" x-text="med.route || 'Route not specified'"></span>
+                                            <button class="btn" @click="openEditModal(med.id)">Edit</button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <div class="panel p-5">
+                                <h2 class="section-title">Safety center</h2>
+                                <p class="text-sm muted mt-1 mb-5">Current verification status</p>
+                                <div class="rounded-xl border border-amber-700/40 bg-amber-950/25 p-4 mb-4">
+                                    <span class="badge badge-yellow">Not connected</span>
+                                    <p class="font-semibold mt-3">Interaction checker unavailable</p>
+                                    <p class="text-sm muted mt-2 leading-relaxed">No medicines have been clinically
+                                        checked by this prototype.</p>
+                                </div>
+                                <button class="btn w-full" @click="navigate('safety')">View safety information
+                                    →</button>
+                            </div>
+                        </div>
+
+                        <div class="panel p-5 mt-5">
+                            <div class="flex items-center justify-between gap-3 mb-4">
+                                <div>
+                                    <h2 class="section-title">Recent dose history</h2>
+                                    <p class="text-sm muted mt-1">Entries you recorded manually</p>
+                                </div>
+                                <button class="btn" @click="navigate('history')">View history →</button>
+                            </div>
+                            <template x-if="history.length === 0">
+                                <p class="muted text-sm py-5">No dose records yet. Record a status from the medication
+                                    list.</p>
+                            </template>
+                            <div class="space-y-3">
+                                <template x-for="entry in history.slice(0, 4)" :key="entry.id">
+                                    <div class="flex items-center gap-3 py-2">
+                                        <span class="w-9 h-9 rounded-lg bg-slate-900 grid place-items-center">◷</span>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-semibold truncate" x-text="entry.medicationName"></p>
+                                            <p class="text-xs muted mt-1" x-text="formatDate(entry.timestamp)"></p>
+                                        </div>
+                                        <span class="badge"
+                                            :class="entry.status === 'Taken' ? 'badge-teal' : entry.status === 'Skipped' ? 'badge-red' : 'badge-yellow'"
+                                            x-text="entry.status"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- MEDICATIONS -->
+                    <section x-show="activeTab === 'medications'" x-cloak>
+                        <div class="panel p-5 mb-5">
+                            <div class="flex flex-col md:flex-row gap-4 md:items-end">
+                                <div class="flex-1">
+                                    <label for="med-search" class="small-label">Search medications</label>
+                                    <input id="med-search" class="field" type="search" x-model="searchQuery"
+                                        placeholder="Search name, strength, frequency, route...">
+                                </div>
+                                <button class="btn btn-primary" @click="openAddModal()">＋ Add medicine</button>
+                            </div>
+                        </div>
+                        <template x-if="filteredMedications().length === 0">
+                            <div class="panel p-10 text-center">
+                                <p class="text-3xl mb-3">⌕</p>
+                                <h2 class="font-bold"
+                                    x-text="medications.length ? 'No matching medicines' : 'No medicines saved yet'">
+                                </h2>
+                                <p class="muted text-sm mt-2 mb-5"
+                                    x-text="medications.length ? 'Try a different search term.' : 'Add a record or paste a medication description.'">
+                                </p>
+                                <button class="btn btn-primary"
+                                    @click="medications.length ? searchQuery = '' : openAddModal()"
+                                    x-text="medications.length ? 'Clear search' : 'Add medicine'"></button>
+                            </div>
+                        </template>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <template x-for="med in filteredMedications()" :key="med.id">
+                                <article class="panel p-5">
+                                    <div class="flex items-start gap-3">
+                                        <div
+                                            class="w-12 h-12 rounded-xl bg-teal-950 text-teal-300 grid place-items-center text-xl shrink-0">
+                                            ✚</div>
+                                        <div class="flex-1 min-w-0">
+                                            <h2 class="text-lg font-bold break-words" x-text="med.name"></h2>
+                                            <p class="muted text-sm mt-1"
+                                                x-text="med.strength || 'Strength not specified'"></p>
+                                        </div>
+                                        <span class="badge" x-text="med.route || 'Route N/S'"></span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3 my-5">
+                                        <div class="rounded-lg bg-slate-950/40 p-3">
+                                            <p class="text-xs muted mb-1">Instructions</p>
+                                            <p class="text-sm break-words" x-text="med.instructions || 'Not specified'">
+                                            </p>
+                                        </div>
+                                        <div class="rounded-lg bg-slate-950/40 p-3">
+                                            <p class="text-xs muted mb-1">Frequency</p>
+                                            <p class="text-sm break-words" x-text="med.frequency || 'Not specified'">
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <p class="text-sm muted mb-4 break-words" x-show="med.notes"><span
+                                            class="text-slate-300">Notes: </span><span x-text="med.notes"></span></p>
+                                    <div class="border-t divider pt-4">
+                                        <p class="text-xs uppercase tracking-wider muted mb-2">Record dose status</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            <button class="btn" @click="recordDose(med.id, 'Taken')">✓ Taken</button>
+                                            <button class="btn" @click="recordDose(med.id, 'Skipped')">Skipped</button>
+                                            <button class="btn" @click="recordDose(med.id, 'Not yet taken')">Not yet
+                                                taken</button>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2 mt-4">
+                                        <button class="btn flex-1" @click="openEditModal(med.id)">✎ Edit</button>
+                                        <button class="btn btn-danger" @click="removeMedication(med.id)">Remove</button>
+                                    </div>
+                                </article>
+                            </template>
+                        </div>
+                    </section>
+
+                    <!-- SCANNER -->
+                    <section x-show="activeTab === 'scanner'" x-cloak>
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                            <div class="panel p-5 md:p-7">
+                                <div class="flex items-start gap-3 mb-5">
+                                    <div
+                                        class="w-11 h-11 rounded-xl bg-teal-950 text-teal-300 grid place-items-center text-xl">
+                                        ▤</div>
+                                    <div>
+                                        <h2 class="section-title">Prescription input</h2>
+                                        <p class="text-sm muted mt-1">Upload a supported file or paste text to review
+                                            locally.</p>
+                                    </div>
+                                </div>
+                                <div class="drop-zone p-6 text-center">
+                                    <div class="text-4xl mb-3">⇧</div>
+                                    <p class="font-semibold">Choose a file from your device</p>
+                                    <p class="text-sm muted mt-2 mb-4">TXT, PNG, JPG, WEBP, PDF · Max 10 MB</p>
+                                    <input id="prescription-file" class="sr-only" type="file"
+                                        accept=".txt,.png,.jpg,.jpeg,.webp,.pdf,text/plain,image/png,image/jpeg,image/webp,application/pdf"
+                                        @change="handleFile($event)">
+                                    <label for="prescription-file" class="btn inline-flex">Browse file</label>
+                                </div>
+                                <template x-if="fileName">
+                                    <div class="mt-4 rounded-xl bg-slate-950/40 border divider p-4">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <div class="min-w-0">
+                                                <p class="font-semibold break-all" x-text="fileName"></p>
+                                                <p class="text-xs muted mt-1" x-text="fileMessage"></p>
+                                            </div>
+                                            <button class="btn" @click="clearFile()">Clear</button>
+                                        </div>
+                                        <img x-show="imagePreview" :src="imagePreview" alt="Local image preview"
+                                            class="mt-4 max-h-72 max-w-full rounded-lg mx-auto object-contain">
+                                    </div>
+                                </template>
+                                <p class="text-xs muted mt-4 leading-relaxed">Image and PDF OCR is unavailable. This
+                                    prototype does not extract or verify text from image/PDF files. Text files are read
+                                    locally.</p>
+                                <button class="btn btn-primary w-full mt-5" @click="openPasteModal()">Paste description
+                                    instead</button>
+                            </div>
+
+                            <div class="panel p-5 md:p-7">
+                                <h2 class="section-title">How it works</h2>
+                                <p class="text-sm muted mt-2 mb-5">Review every parsed field before saving. Parsing is a
+                                    basic text helper, not medical-grade OCR.</p>
+                                <div class="space-y-4">
+                                    <div class="flex gap-3">
+                                        <span
+                                            class="w-8 h-8 rounded-full bg-teal-950 text-teal-300 grid place-items-center font-bold shrink-0">1</span>
+                                        <div>
+                                            <p class="font-semibold">Paste labelled text</p>
+                                            <p class="text-sm muted mt-1">Use headings such as “Medication Name:” to
+                                                identify each entry.</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-3">
+                                        <span
+                                            class="w-8 h-8 rounded-full bg-teal-950 text-teal-300 grid place-items-center font-bold shrink-0">2</span>
+                                        <div>
+                                            <p class="font-semibold">Review each draft</p>
+                                            <p class="text-sm muted mt-1">Correct names and fields. Missing details
+                                                remain unspecified.</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-3">
+                                        <span
+                                            class="w-8 h-8 rounded-full bg-teal-950 text-teal-300 grid place-items-center font-bold shrink-0">3</span>
+                                        <div>
+                                            <p class="font-semibold">Confirm and save</p>
+                                            <p class="text-sm muted mt-1">Only checked entries are added to your local
+                                                medication list.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-7 rounded-xl border divider p-4">
+                                    <p class="font-semibold">Example format</p>
+                                    <pre class="text-sm muted whitespace-pre-wrap mt-3 leading-relaxed">Medication Name: Example Medicine A
+Strength: 10 mg
+Dosage Instructions: As written on the prescription
+Frequency: Not specified
+Route: Not specified
+
+Medication Name: Example Medicine B
+Strength: Not specified
+Dosage Instructions: Not specified
+Frequency: Not specified</pre>
+                                    <p class="text-xs muted mt-3">Example placeholders only. They are not medical
+                                        recommendations.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TXT content -->
+                        <div x-show="textFileContent !== null" class="panel p-5 mt-5">
+                            <div class="flex items-center justify-between gap-3 mb-3">
+                                <h2 class="section-title">Text file contents</h2>
+                                <button class="btn" @click="openPasteModal(textFileContent || '')">Open in description
+                                    editor</button>
+                            </div>
+                            <pre class="text-sm whitespace-pre-wrap break-words muted max-h-96 overflow-auto"
+                                x-text="textFileContent"></pre>
+                        </div>
+
+                        <!-- Draft review -->
+                        <div x-show="drafts.length > 0" x-cloak class="mt-7">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                                <div>
+                                    <h2 class="text-xl font-bold">Review extracted drafts</h2>
+                                    <p class="text-sm muted mt-1">Nothing is saved until you confirm selected entries.
+                                    </p>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button class="btn" @click="drafts.forEach(d => d.selected = true)">Select
+                                        all</button>
+                                    <button class="btn" @click="drafts.forEach(d => d.selected = false)">Deselect
+                                        all</button>
+                                    <button class="btn btn-primary" @click="saveReviewedDrafts()">Review &amp; Save
+                                        selected</button>
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                <template x-for="draft in drafts" :key="draft.id">
+                                    <div class="panel p-5">
+                                        <div class="flex items-center justify-between gap-3 mb-4">
+                                            <label class="flex items-center gap-3 font-semibold">
+                                                <input type="checkbox" class="accent-teal-300 w-4 h-4"
+                                                    x-model="draft.selected">
+                                                Include this record
+                                            </label>
+                                            <button class="btn btn-danger" @click="removeDraft(draft.id)">Remove
+                                                draft</button>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div><label class="small-label">Medication name *</label><input
+                                                    class="field" x-model="draft.name" placeholder="Name from the text">
+                                            </div>
+                                            <div><label class="small-label">Strength</label><input class="field"
+                                                    x-model="draft.strength" placeholder="Not specified"></div>
+                                            <div><label class="small-label">Dosage instructions</label><input
+                                                    class="field" x-model="draft.instructions"
+                                                    placeholder="Not specified"></div>
+                                            <div><label class="small-label">Frequency</label><input class="field"
+                                                    x-model="draft.frequency" placeholder="Not specified"></div>
+                                            <div><label class="small-label">Route</label><input class="field"
+                                                    x-model="draft.route" placeholder="Not specified"></div>
+                                            <div><label class="small-label">Additional notes</label><input class="field"
+                                                    x-model="draft.notes" placeholder="Optional"></div>
+                                        </div>
+                                        <p class="text-xs muted mt-3">Check all details against the original source
+                                            before saving.</p>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SAFETY -->
+                    <section x-show="activeTab === 'safety'" x-cloak>
+                        <div class="panel p-6 md:p-8 mb-5">
+                            <div class="flex items-start gap-4">
+                                <div
+                                    class="w-14 h-14 rounded-2xl bg-amber-950/70 text-amber-300 grid place-items-center text-2xl shrink-0">
+                                    !</div>
+                                <div>
+                                    <span class="badge badge-yellow">Not connected</span>
+                                    <h2 class="text-xl font-bold mt-3">Automated interaction checking is not available
+                                    </h2>
+                                    <p class="muted mt-3 leading-relaxed">This frontend-only prototype does not compare
+                                        medications, calculate risk scores, identify contraindications, or confirm that
+                                        a medication is safe for a person. A lack of warnings must not be interpreted as
+                                        proof of safety.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div class="panel p-5">
+                                <h3 class="font-bold text-lg">Questions about a medication?</h3>
+                                <p class="muted text-sm mt-2 leading-relaxed">Ask a pharmacist or qualified healthcare
+                                    professional to review your complete medication list, including over-the-counter
+                                    medicines and supplements.</p>
+                            </div>
+                            <div class="panel p-5">
+                                <h3 class="font-bold text-lg">Prescription concerns</h3>
+                                <p class="muted text-sm mt-2 leading-relaxed">Follow the instructions provided by your
+                                    prescriber. Do not start, stop, or change a prescribed medicine based solely on this
+                                    prototype.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- HISTORY -->
+                    <section x-show="activeTab === 'history'" x-cloak>
+                        <div class="panel p-5">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                                <div>
+                                    <h2 class="section-title">Dose history</h2>
+                                    <p class="text-sm muted mt-1">Manual status entries recorded in this browser.</p>
+                                </div>
+                                <button class="btn btn-danger" @click="clearHistory()"
+                                    :disabled="history.length === 0">Clear history</button>
+                            </div>
+                            <template x-if="history.length === 0">
+                                <div class="text-center py-12">
+                                    <p class="text-3xl mb-3">◷</p>
+                                    <p class="font-semibold">No dose history yet</p>
+                                    <p class="text-sm muted mt-2">Dose status entries will appear here.</p>
+                                    <button class="btn mt-4" @click="navigate('medications')">View medications</button>
+                                </div>
+                            </template>
+                            <div class="table-wrap" x-show="history.length > 0">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Medication</th>
+                                            <th>Status</th>
+                                            <th>Date &amp; time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="entry in history" :key="entry.id">
+                                            <tr>
+                                                <td class="font-semibold" x-text="entry.medicationName"></td>
+                                                <td><span class="badge"
+                                                        :class="entry.status === 'Taken' ? 'badge-teal' : entry.status === 'Skipped' ? 'badge-red' : 'badge-yellow'"
+                                                        x-text="entry.status"></span></td>
+                                                <td class="muted text-sm" x-text="formatDate(entry.timestamp)"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- CAREGIVERS -->
+                    <section x-show="activeTab === 'caregivers'" x-cloak>
+                        <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+                            <div class="panel p-5 md:p-7 xl:col-span-1">
+                                <h2 class="section-title">Add a contact</h2>
+                                <p class="text-sm muted mt-2 mb-5">Contact details are stored only in this browser. No
+                                    invitations or messages are sent.</p>
+                                <form @submit.prevent="addCaregiver()" class="space-y-4">
+                                    <div>
+                                        <label class="small-label" for="caregiver-name">Contact name *</label>
+                                        <input id="caregiver-name" class="field" x-model="caregiverForm.name"
+                                            maxlength="100" required placeholder="Demo contact">
+                                    </div>
+                                    <div>
+                                        <label class="small-label" for="caregiver-email">Email (optional)</label>
+                                        <input id="caregiver-email" class="field" type="email"
+                                            x-model="caregiverForm.email" maxlength="254"
+                                            placeholder="contact@example.com">
+                                    </div>
+                                    <div>
+                                        <label class="small-label" for="caregiver-phone">Phone (optional)</label>
+                                        <input id="caregiver-phone" class="field" type="tel"
+                                            x-model="caregiverForm.phone" maxlength="30" placeholder="Phone number">
+                                    </div>
+                                    <button class="btn btn-primary w-full" type="submit">＋ Save contact locally</button>
+                                </form>
+                            </div>
+                            <div class="panel p-5 md:p-7 xl:col-span-2">
+                                <h2 class="section-title">Saved contacts <span class="muted text-sm font-normal"
+                                        x-text="'(' + caregivers.length + ')'"></span></h2>
+                                <p class="text-sm muted mt-2 mb-5">These entries do not create account access or grant
+                                    permissions.</p>
+                                <template x-if="caregivers.length === 0">
+                                    <div class="text-center py-10">
+                                        <p class="text-3xl mb-3">♧</p>
+                                        <p class="font-semibold">No contacts saved</p>
+                                        <p class="text-sm muted mt-2">Add a demo contact using the form.</p>
+                                    </div>
+                                </template>
+                                <div class="space-y-3">
+                                    <template x-for="person in caregivers" :key="person.id">
+                                        <div
+                                            class="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border divider bg-slate-950/30 p-4">
+                                            <div class="w-11 h-11 rounded-full bg-teal-950 text-teal-300 grid place-items-center font-bold"
+                                                x-text="person.name.slice(0,1).toUpperCase()"></div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="font-semibold" x-text="person.name"></p>
+                                                <p class="text-sm muted break-all"
+                                                    x-text="person.email || 'No email provided'"></p>
+                                                <p class="text-xs muted mt-1"
+                                                    x-text="person.phone || 'No phone provided'"></p>
+                                            </div>
+                                            <button class="btn btn-danger"
+                                                @click="removeCaregiver(person.id)">Remove</button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <footer
+                        class="mt-10 pt-5 border-t divider text-xs muted flex flex-col sm:flex-row gap-2 justify-between">
+                        <span>MedGuard AI · Local frontend prototype</span>
+                        <span>No clinical verification · No data sent to a server by this app</span>
+                    </footer>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- ADD / EDIT MEDICINE MODAL -->
+    <div x-cloak x-show="medicineModalOpen" x-transition.opacity
+        class="fixed inset-0 z-40 modal-backdrop flex items-center justify-center p-4" @click.self="closeModals()">
+        <section role="dialog" aria-modal="true" aria-labelledby="medicine-modal-title"
+            class="panel w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 md:p-7">
+            <div class="flex items-start justify-between gap-4 mb-6">
+                <div>
+                    <h2 id="medicine-modal-title" class="text-xl font-bold"
+                        x-text="editingId ? 'Edit medication' : 'Add new medication'"></h2>
+                    <p class="text-sm muted mt-1">Enter only details you have verified yourself.</p>
+                </div>
+                <button class="btn" @click="closeModals()" aria-label="Close medication form">✕</button>
+            </div>
+            <form @submit.prevent="saveMedication()" class="space-y-4">
+                <div>
+                    <label class="small-label" for="med-name">Medication name *</label>
+                    <input id="med-name" class="field" x-model="medicineForm.name" required maxlength="150"
+                        placeholder="Enter medication name">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="small-label" for="med-strength">Strength</label>
+                        <input id="med-strength" class="field" x-model="medicineForm.strength" maxlength="100"
+                            placeholder="Not specified">
+                    </div>
+                    <div>
+                        <label class="small-label" for="med-route">Route</label>
+                        <input id="med-route" class="field" x-model="medicineForm.route" maxlength="100"
+                            placeholder="Not specified">
+                    </div>
+                    <div>
+                        <label class="small-label" for="med-instructions">Dosage instructions</label>
+                        <input id="med-instructions" class="field" x-model="medicineForm.instructions" maxlength="250"
+                            placeholder="Enter as written by prescriber">
+                    </div>
+                    <div>
+                        <label class="small-label" for="med-frequency">Frequency</label>
+                        <input id="med-frequency" class="field" x-model="medicineForm.frequency" maxlength="150"
+                            placeholder="Not specified">
+                    </div>
+                </div>
+                <div>
+                    <label class="small-label" for="med-notes">Additional notes</label>
+                    <textarea id="med-notes" class="field" x-model="medicineForm.notes" maxlength="1000" rows="3"
+                        placeholder="Optional notes"></textarea>
+                </div>
+                <p class="text-xs muted">Do not use this prototype to calculate or decide medication doses.</p>
+                <div class="flex flex-wrap justify-end gap-2 pt-3">
+                    <button type="button" class="btn" @click="closeModals()">Cancel</button>
+                    <button type="submit" class="btn btn-primary"
+                        x-text="editingId ? 'Save changes' : 'Add medication'"></button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <!-- PASTE DESCRIPTION MODAL -->
+    <div x-cloak x-show="pasteModalOpen" x-transition.opacity
+        class="fixed inset-0 z-40 modal-backdrop flex items-center justify-center p-4" @click.self="closePasteModal()">
+        <section role="dialog" aria-modal="true" aria-labelledby="paste-modal-title"
+            class="panel w-full max-w-3xl max-h-[92vh] overflow-y-auto p-5 md:p-7">
+            <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                    <h2 id="paste-modal-title" class="text-xl font-bold">Paste medication description</h2>
+                    <p class="text-sm muted mt-1">Use clearly labelled entries. Review all parsed details before saving.
+                    </p>
+                </div>
+                <button class="btn" @click="closePasteModal()" aria-label="Close description editor">✕</button>
+            </div>
+            <label for="description-text" class="small-label">Description text</label>
+            <textarea id="description-text" class="field min-h-64" rows="10" maxlength="30000" x-model="descriptionText"
+                placeholder="Medication Name: Example Medicine A&#10;Strength: Not specified&#10;Frequency: Not specified&#10;&#10;Medication Name: Example Medicine B&#10;Strength: Not specified"></textarea>
+            <div class="flex justify-between gap-3 text-xs muted mt-2">
+                <span x-text="descriptionText.length.toLocaleString() + ' / 30,000 characters'"></span>
+                <span>Text is processed locally.</span>
+            </div>
+            <p x-show="descriptionError" x-text="descriptionError" role="alert" class="text-sm text-rose-300 mt-3"></p>
+            <div class="flex flex-wrap gap-2 mt-5">
+                <button class="btn" @click="pasteFromClipboard()">Paste from clipboard</button>
+                <button class="btn" @click="descriptionText = ''; descriptionError = ''">Clear</button>
+                <div class="flex-1"></div>
+                <button class="btn" @click="closePasteModal()">Cancel</button>
+                <button class="btn btn-primary" @click="parseDescription()">Parse description</button>
+            </div>
+            <p class="text-xs muted mt-4 leading-relaxed">Parsing uses labels and simple text rules. It is not a medical
+                model and may not correctly interpret all formats. Verify every field against the original document.</p>
+        </section>
+    </div>
+
+    <!-- TOASTS -->
+    <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:w-96 z-50 space-y-2" aria-live="polite"
+        aria-atomic="false">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div class="toast rounded-xl border p-4 flex items-start gap-3"
+                :class="toast.type === 'error' ? 'bg-rose-950 border-rose-800' : toast.type === 'warning' ? 'bg-amber-950 border-amber-800' : 'bg-slate-900 border-teal-800'">
+                <span x-text="toast.type === 'error' ? '!' : toast.type === 'warning' ? '⚠' : '✓'"
+                    class="font-bold"></span>
+                <p class="text-sm flex-1" x-text="toast.message"></p>
+                <button class="muted" @click="dismissToast(toast.id)" aria-label="Dismiss message">✕</button>
+            </div>
+        </template>
+    </div>
+
+    <script>
+        function medGuardMasterApp() {
+            return {
+                navItems: [
+                    { id: 'overview', label: 'Overview', icon: '▦' },
+                    { id: 'medications', label: 'My medications', icon: '✚' },
+                    { id: 'scanner', label: 'Prescription scanner', icon: '▤' },
+                    { id: 'safety', label: 'Medication safety', icon: '盾' },
+                    { id: 'caregivers', label: 'Caregiver contacts', icon: '♧' },
+                    { id: 'history', label: 'Dose history', icon: '◷' }
+                ],
+                activeTab: 'overview',
+                mobileMenuOpen: false,
+                medicineModalOpen: false,
+                pasteModalOpen: false,
+                editingId: null,
+                searchQuery: '',
+                medications: [],
+                history: [],
+                caregivers: [],
+                drafts: [],
+                medicineForm: {},
+                caregiverForm: { name: '', email: '', phone: '' },
+                descriptionText: '',
+                descriptionError: '',
+                fileName: '',
+                fileMessage: '',
+                textFileContent: null,
+                imagePreview: null,
+                toasts: [],
+                storageAvailable: true,
+                storageKeys: {
+                    medications: 'medguard_demo_medications_v1',
+                    history: 'medguard_demo_dose_history_v1',
+                    caregivers: 'medguard_demo_caregivers_v1'
+                },
+
+                init() {
+                    this.medicineForm = this.emptyMedicine();
+                    this.loadAll();
+                },
+
+                emptyMedicine() {
+                    return { name: '', strength: '', instructions: '', frequency: '', route: '', notes: '' };
+                },
+
+                makeId() {
+                    try {
+                        if (globalThis.crypto && typeof crypto.randomUUID === 'function') {
+                            return crypto.randomUUID();
+                        }
+                    } catch (_) { }
+                    return 'mg-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 11);
+                },
+
+                clean(value, maxLength = 1000) {
+                    return String(value ?? '').replace(/\u0000/g, '').trim().slice(0, maxLength);
+                },
+
+                currentTitle() {
+                    const item = this.navItems.find(x => x.id === this.activeTab);
+                    return item ? item.label : 'Overview';
+                },
+
+                currentSubtitle() {
+                    const subtitles = {
+                        overview: 'A clear view of your locally saved medication records.',
+                        medications: 'Manage your medication records and manually record dose status.',
+                        scanner: 'Read local text and prepare medication records for your review.',
+                        safety: 'Understand the safety limits of this frontend-only prototype.',
+                        caregivers: 'Manage contact entries stored in this browser.',
+                        history: 'Review manually recorded dose statuses and timestamps.'
+                    };
+                    return subtitles[this.activeTab] || '';
+                },
+
+                navigate(tab) {
+                    if (!this.navItems.some(item => item.id === tab)) return;
+                    this.activeTab = tab;
+                    this.mobileMenuOpen = false;
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+
+                notify(message, type = 'success') {
+                    const id = this.makeId();
+                    this.toasts.push({ id, message: String(message), type });
+                    if (this.toasts.length > 4) this.toasts.shift();
+                    // Toasts are dismissible; no timers are needed.
+                },
+
+                dismissToast(id) {
+                    this.toasts = this.toasts.filter(t => t.id !== id);
+                },
+
+                safeRead(key) {
+                    try {
+                        const raw = localStorage.getItem(key);
+                        if (raw === null) return [];
+                        const value = JSON.parse(raw);
+                        if (!Array.isArray(value)) throw new Error('Stored value is not a list');
+                        return value;
+                    } catch (_) {
+                        this.storageAvailable = false;
+                        this.notify('Some saved browser data could not be read. Check browser storage settings.', 'warning');
+                        return [];
+                    }
+                },
+
+                safeWrite(key, value) {
+                    try {
+                        localStorage.setItem(key, JSON.stringify(value));
+                        return true;
+                    } catch (_) {
+                        this.storageAvailable = false;
+                        this.notify('Could not save to browser storage. Changes may be lost after refresh.', 'error');
+                        return false;
+                    }
+                },
+
+                loadAll() {
+                    try {
+                        this.medications = this.safeRead(this.storageKeys.medications)
+                            .filter(m => m && typeof m === 'object' && typeof m.id === 'string' && typeof m.name === 'string')
+                            .map(m => ({ ...this.emptyMedicine(), ...m, name: this.clean(m.name, 150) }))
+                            .filter(m => m.name);
+                        this.history = this.safeRead(this.storageKeys.history)
+                            .filter(h => h && typeof h === 'object' && typeof h.id === 'string')
+                            .map(h => ({
+                                id: h.id,
+                                medicationId: this.clean(h.medicationId, 100),
+                                medicationName: this.clean(h.medicationName, 150),
+                                status: ['Taken', 'Skipped', 'Not yet taken'].includes(h.status) ? h.status : 'Not yet taken',
+                                timestamp: typeof h.timestamp === 'string' && !Number.isNaN(Date.parse(h.timestamp)) ? h.timestamp : new Date().toISOString()
+                            }));
+                        this.caregivers = this.safeRead(this.storageKeys.caregivers)
+                            .filter(c => c && typeof c === 'object' && typeof c.id === 'string' && typeof c.name === 'string')
+                            .map(c => ({
+                                id: c.id,
+                                name: this.clean(c.name, 100),
+                                email: this.clean(c.email, 254),
+                                phone: this.clean(c.phone, 30)
+                            })).filter(c => c.name);
+                    } catch (_) {
+                        this.notify('The local records could not be loaded.', 'error');
+                    }
+                },
+
+                persistMedications() {
+                    return this.safeWrite(this.storageKeys.medications, this.medications);
+                },
+
+                persistHistory() {
+                    return this.safeWrite(this.storageKeys.history, this.history);
+                },
+
+                persistCaregivers() {
+                    return this.safeWrite(this.storageKeys.caregivers, this.caregivers);
+                },
+
+                filteredMedications() {
+                    const query = this.clean(this.searchQuery, 200).toLowerCase();
+                    if (!query) return this.medications;
+                    return this.medications.filter(m =>
+                        [m.name, m.strength, m.instructions, m.frequency, m.route, m.notes]
+                            .some(v => String(v || '').toLowerCase().includes(query))
+                    );
+                },
+
+                openAddModal(prefill = null) {
+                    this.editingId = null;
+                    this.medicineForm = { ...this.emptyMedicine(), ...(prefill || {}) };
+                    this.medicineModalOpen = true;
+                    this.$nextTick(() => document.getElementById('med-name')?.focus());
+                },
+
+                openEditModal(id) {
+                    const med = this.medications.find(m => m.id === id);
+                    if (!med) {
+                        this.notify('That medication record no longer exists.', 'error');
+                        return;
+                    }
+                    this.editingId = id;
+                    this.medicineForm = { ...this.emptyMedicine(), ...med };
+                    this.medicineModalOpen = true;
+                    this.$nextTick(() => document.getElementById('med-name')?.focus());
+                },
+
+                closeModals() {
+                    this.medicineModalOpen = false;
+                    this.editingId = null;
+                    this.medicineForm = this.emptyMedicine();
+                    this.pasteModalOpen = false;
+                    this.descriptionError = '';
+                },
+
+                saveMedication() {
+                    const form = {
+                        name: this.clean(this.medicineForm.name, 150),
+                        strength: this.clean(this.medicineForm.strength, 100),
+                        instructions: this.clean(this.medicineForm.instructions, 250),
+                        frequency: this.clean(this.medicineForm.frequency, 150),
+                        route: this.clean(this.medicineForm.route, 100),
+                        notes: this.clean(this.medicineForm.notes, 1000)
+                    };
+                    if (!form.name) {
+                        this.notify('Medication name is required.', 'error');
+                        return;
+                    }
+
+                    if (this.editingId) {
+                        const index = this.medications.findIndex(m => m.id === this.editingId);
+                        if (index < 0) {
+                            this.notify('This medication could not be found. Refresh and try again.', 'error');
+                            return;
+                        }
+                        this.medications[index] = { ...this.medications[index], ...form };
+                        this.persistMedications();
+                        this.notify('Medication updated locally.');
+                    } else {
+                        this.medications.unshift({ id: this.makeId(), ...form, createdAt: new Date().toISOString() });
+                        this.persistMedications();
+                        this.notify('Medication added locally.');
+                    }
+                    this.closeModals();
+                },
+
+                removeMedication(id) {
+                    const med = this.medications.find(m => m.id === id);
+                    if (!med) {
+                        this.notify('Medication not found.', 'error');
+                        return;
+                    }
+                    if (!window.confirm('Remove "' + med.name + '" from your local medication list? Existing dose history will be retained.')) return;
+                    this.medications = this.medications.filter(m => m.id !== id);
+                    this.persistMedications();
+                    this.notify('Medication removed.');
+                },
+
+                recordDose(id, status) {
+                    const med = this.medications.find(m => m.id === id);
+                    if (!med) {
+                        this.notify('Medication not found.', 'error');
+                        return;
+                    }
+                    if (!['Taken', 'Skipped', 'Not yet taken'].includes(status)) {
+                        this.notify('Choose a valid dose status.', 'error');
+                        return;
+                    }
+                    this.history.unshift({
+                        id: this.makeId(),
+                        medicationId: med.id,
+                        medicationName: med.name,
+                        status,
+                        timestamp: new Date().toISOString()
+                    });
+                    this.persistHistory();
+                    this.notify('Dose status recorded: ' + status + '.');
+                },
+
+                clearHistory() {
+                    if (!this.history.length) return;
+                    if (!window.confirm('Clear all dose history from this browser? This cannot be undone.')) return;
+                    this.history = [];
+                    this.persistHistory();
+                    this.notify('Dose history cleared.');
+                },
+
+                formatDate(value) {
+                    const date = new Date(value);
+                    if (Number.isNaN(date.getTime())) return 'Unknown date';
+                    try {
+                        return new Intl.DateTimeFormat(undefined, {
+                            year: 'numeric', month: 'short', day: 'numeric',
+                            hour: 'numeric', minute: '2-digit'
+                        }).format(date);
+                    } catch (_) {
+                        return date.toLocaleString();
+                    }
+                },
+
+                addCaregiver() {
+                    const name = this.clean(this.caregiverForm.name, 100);
+                    const email = this.clean(this.caregiverForm.email, 254);
+                    const phone = this.clean(this.caregiverForm.phone, 30);
+                    if (!name) {
+                        this.notify('Contact name is required.', 'error');
+                        return;
+                    }
+                    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                        this.notify('Enter a valid email address or leave it blank.', 'error');
+                        return;
+                    }
+                    if (this.caregivers.some(c => email && c.email.toLowerCase() === email.toLowerCase())) {
+                        this.notify('A contact with this email already exists.', 'warning');
+                        return;
+                    }
+                    this.caregivers.unshift({ id: this.makeId(), name, email, phone });
+                    this.persistCaregivers();
+                    this.caregiverForm = { name: '', email: '', phone: '' };
+                    this.notify('Contact saved locally. No invitation was sent.');
+                },
+
+                removeCaregiver(id) {
+                    const person = this.caregivers.find(c => c.id === id);
+                    if (!person) return;
+                    if (!window.confirm('Remove this local contact entry?')) return;
+                    this.caregivers = this.caregivers.filter(c => c.id !== id);
+                    this.persistCaregivers();
+                    this.notify('Contact removed.');
+                },
+
+                openPasteModal(initialText = '') {
+                    this.descriptionText = typeof initialText === 'string' ? initialText.slice(0, 30000) : '';
+                    this.descriptionError = '';
+                    this.pasteModalOpen = true;
+                    this.$nextTick(() => document.getElementById('description-text')?.focus());
+                },
+
+                closePasteModal() {
+                    this.pasteModalOpen = false;
+                    this.descriptionError = '';
+                },
+
+                async pasteFromClipboard() {
+                    try {
+                        if (!navigator.clipboard || typeof navigator.clipboard.readText !== 'function') {
+                            throw new Error('Clipboard access is unavailable in this browser context.');
+                        }
+                        const text = await navigator.clipboard.readText();
+                        this.descriptionText = (this.descriptionText + (this.descriptionText ? '\n' : '') + text).slice(0, 30000);
+                        this.descriptionError = '';
+                        this.notify('Clipboard text pasted into the editor.');
+                    } catch (_) {
+                        this.descriptionError = 'Clipboard access was denied or is unavailable. Click the text area and paste manually using Ctrl+V.';
+                        this.notify('Clipboard unavailable. You can paste manually with Ctrl+V.', 'warning');
+                    }
+                },
+
+                normalizeDescription(text) {
+                    return String(text || '')
+                        .replace(/\r\n?/g, '\n')
+                        .replace(/\*\*(.*?)\*\*/g, '$1')
+                        .replace(/__(.*?)__/g, '$1')
+                        .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+                        .replace(/^\s*[-*+]\s+/gm, '')
+                        .replace(/^\s*\d+[.)]\s+/gm, '')
+                        .replace(/<[^>]*>/g, '')
+                        .trim();
+                },
+
+                parseDescription() {
+                    this.descriptionError = '';
+                    const raw = this.normalizeDescription(this.descriptionText);
+                    if (!raw) {
+                        this.descriptionError = 'Enter a medication description before parsing.';
+                        return;
+                    }
+
+                    const lines = raw.split('\n').map(line => line.trim()).filter(Boolean);
+                    const fieldMap = [
+                        { key: 'name', pattern: /^(?:medication(?:\s+name)?|medicine(?:\s+name)?|drug(?:\s+name)?|name)\s*:\s*(.*)$/i },
+                        { key: 'strength', pattern: /^(?:strength|concentration)\s*:\s*(.*)$/i },
+                        { key: 'instructions', pattern: /^(?:dosage\s+instructions|dosage|dose|directions|instructions|sig)\s*:\s*(.*)$/i },
+                        { key: 'frequency', pattern: /^(?:frequency|how\s+often|schedule)\s*:\s*(.*)$/i },
+                        { key: 'route', pattern: /^(?:route|route\s+of\s+administration)\s*:\s*(.*)$/i },
+                        { key: 'notes', pattern: /^(?:additional\s+notes|notes|comments)\s*:\s*(.*)$/i }
+                    ];
+
+                    const parsed = [];
+                    let current = null;
+                    let ignoredText = false;
+
+                    const beginRecord = () => ({
+                        id: this.makeId(),
+                        selected: true,
+                        name: '',
+                        strength: '',
+                        instructions: '',
+                        frequency: '',
+                        route: '',
+                        notes: ''
+                    });
+
+                    for (const line of lines) {
+                        const match = line.match(/^(.{1,80}?)\s*:\s*(.*)$/);
+                        if (match) {
+                            const field = fieldMap.find(item => item.pattern.test(line));
+                            if (field) {
+                                if (field.key === 'name') {
+                                    if (current && current.name.trim()) parsed.push(current);
+                                    current = beginRecord();
+                                    current.name = this.clean(field.pattern.exec(line)[1], 150);
+                                } else if (current) {
+                                    const fieldMatch = field.pattern.exec(line);
+                                    current[field.key] = this.clean(fieldMatch ? fieldMatch[1] : '', field.key === 'notes' ? 1000 : 250);
+                                } else {
+                                    // Fields before a medication name are not enough to create a record.
+                                    ignoredText = true;
+                                }
+                                continue;
+                            }
+
+                            // Unknown labels must not become medication names.
+                            if (/^(patient|patient name|doctor|prescriber|hospital|clinic|address|date|diagnosis|prescription|instructions for patient|allergies|heading|introduction)$/i.test(match[1].trim())) {
+                                ignoredText = true;
+                                continue;
+                            }
+                        }
+
+                        // Only add unlabelled lines as notes after an explicitly named medicine.
+                        if (current && !current.notes) {
+                            current.notes = this.clean(line, 1000);
+                        } else if (current && current.notes) {
+                            current.notes = this.clean(current.notes + '\n' + line, 1000);
+                        } else {
+                            ignoredText = true;
+                        }
+                    }
+
+                    if (current && current.name.trim()) parsed.push(current);
+
+                    const valid = parsed.filter(d => d.name.trim());
+                    if (!valid.length) {
+                        this.descriptionError = 'No labelled medication names were found. Add entries such as “Medication Name: Example Medicine” and try again.';
+                        if (ignoredText) this.notify('Only clearly labelled medication entries can be parsed.', 'warning');
+                        return;
+                    }
+
+                    this.drafts = valid;
+                    this.closePasteModal();
+                    this.notify(valid.length + ' draft medication record(s) prepared. Review the fields before saving.');
+                    this.$nextTick(() => document.querySelector('[x-show="drafts.length > 0"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+                },
+
+                removeDraft(id) {
+                    this.drafts = this.drafts.filter(d => d.id !== id);
+                    this.notify('Draft removed. No medication record was saved.');
+                },
+
+                saveReviewedDrafts() {
+                    const selected = this.drafts.filter(d => d.selected);
+                    if (!selected.length) {
+                        this.notify('Select at least one draft to save.', 'error');
+                        return;
+                    }
+                    const invalid = selected.find(d => !this.clean(d.name, 150));
+                    if (invalid) {
+                        this.notify('Every selected draft needs a medication name.', 'error');
+                        return;
+                    }
+                    if (!window.confirm('Save ' + selected.length + ' reviewed medication record(s) to this browser? Verify them against the original source first.')) return;
+
+                    const newRecords = selected.map(d => ({
+                        id: this.makeId(),
+                        name: this.clean(d.name, 150),
+                        strength: this.clean(d.strength, 100),
+                        instructions: this.clean(d.instructions, 250),
+                        frequency: this.clean(d.frequency, 150),
+                        route: this.clean(d.route, 100),
+                        notes: this.clean(d.notes, 1000),
+                        createdAt: new Date().toISOString()
+                    }));
+
+                    this.medications = [...newRecords, ...this.medications];
+                    this.persistMedications();
+                    const savedIds = new Set(selected.map(d => d.id));
+                    this.drafts = this.drafts.filter(d => !savedIds.has(d.id));
+                    this.navigate('medications');
+                    this.notify(newRecords.length + ' reviewed record(s) saved locally.');
+                },
+
+                async handleFile(event) {
+                    const file = event.target.files && event.target.files[0];
+                    if (!file) return;
+
+                    this.clearFile(false);
+                    this.fileName = file.name;
+                    const maxBytes = 10 * 1024 * 1024;
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const supported = ['txt', 'png', 'jpg', 'jpeg', 'webp', 'pdf'];
+                    if (!supported.includes(ext)) {
+                        this.fileMessage = 'Unsupported file type.';
+                        this.notify('Choose a TXT, PNG, JPG, WEBP, or PDF file.', 'error');
+                        event.target.value = '';
+                        return;
+                    }
+                    if (file.size > maxBytes) {
+                        this.fileMessage = 'File exceeds 10 MB.';
+                        this.notify('This file exceeds the 10 MB size limit.', 'error');
+                        event.target.value = '';
+                        return;
+                    }
+                    if (file.size === 0) {
+                        this.fileMessage = 'The selected file is empty.';
+                        this.notify('Choose a file that contains data.', 'error');
+                        event.target.value = '';
+                        return;
+                    }
+
+                    try {
+                        if (ext === 'txt') {
+                            const text = await file.text();
+                            this.textFileContent = text.slice(0, 30000);
+                            this.fileMessage = 'Text file read locally. Review its contents; nothing was automatically saved.';
+                            this.notify('Text file read. Review the content before parsing.');
+                        } else if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
+                            if (file.type && !file.type.startsWith('image/')) {
+                                throw new Error('The file content does not match the expected image type.');
+                            }
+                            this.imagePreview = await this.readImagePreview(file);
+                            this.fileMessage = 'Local image preview only. OCR is unavailable; no text was extracted.';
+                            this.notify('Image preview ready. OCR is not available in this demo.', 'warning');
+                        } else if (ext === 'pdf') {
+                            this.fileMessage = 'PDF selected. PDF text extraction and OCR are unavailable in this demo.';
+                            this.notify('PDF selected, but automatic extraction is unavailable.', 'warning');
+                        }
+                    } catch (error) {
+                        this.fileMessage = 'The file could not be read.';
+                        this.notify(error && error.message ? error.message : 'Could not read this file.', 'error');
+                    }
+                },
+
+                readImagePreview(file) {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                            if (typeof reader.result === 'string') resolve(reader.result);
+                            else reject(new Error('Could not preview this image.'));
+                        };
+                        reader.onerror = () => reject(new Error('Could not read this image.'));
+                        reader.readAsDataURL(file);
+                    });
+                },
+
+                clearFile(resetInput = true) {
+                    this.fileName = '';
+                    this.fileMessage = '';
+                    this.textFileContent = null;
+                    this.imagePreview = null;
+                    if (resetInput) {
+                        const input = document.getElementById('prescription-file');
+                        if (input) input.value = '';
+                    }
+                }
+            };
+        }
+    </script>
+</body>
+
+</html>
